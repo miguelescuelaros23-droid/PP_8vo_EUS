@@ -1,0 +1,24 @@
+# Credenciales — NUNCA subir
+db.env
+eus-backend/.env
+
+# Entornos virtuales
+.venv/
+venv/
+
+# Dependencias Node
+Portal de Salud/node_modules/
+eum-frontend/node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Archivos grandes / personales
+dataset_eus/
+eum-frontend/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
