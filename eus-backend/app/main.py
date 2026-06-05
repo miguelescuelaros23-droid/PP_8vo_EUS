@@ -28,6 +28,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
+        "https://pp-8vo-eus.vercel.app",
         "https://pp-8vo-r4ivx7pq5-frontend-prototipico8vo-s-projects.vercel.app",
     ],
     allow_credentials=True,
