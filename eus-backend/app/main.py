@@ -25,7 +25,11 @@ app = FastAPI(
 # En producción reemplaza "*" por la URL real de tu frontend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://pp-8vo-r4ivx7pq5-frontend-prototipico8vo-s-projects.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
