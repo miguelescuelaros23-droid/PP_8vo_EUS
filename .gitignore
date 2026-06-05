@@ -17,7 +17,6 @@ __pycache__/
 
 # Archivos grandes / personales
 dataset_eus/
-eum-frontend/
 
 # Archivos del sistema
 .DS_Store
