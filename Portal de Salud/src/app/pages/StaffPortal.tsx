@@ -316,7 +316,13 @@ function PanelModelo() {
                   Cargando pacientes...
                 </div>
               ) : (
-                <Select value={pacienteId} onValueChange={handleSeleccion}>
+                /* key fuerza un remount completo de Radix cuando cambia la lista,
+                   evitando el error "removeChild" de portales huérfanos */
+                <Select
+                  key={`select-${listaPacientes.length}`}
+                  value={pacienteId}
+                  onValueChange={handleSeleccion}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Elige un paciente..." />
                   </SelectTrigger>
