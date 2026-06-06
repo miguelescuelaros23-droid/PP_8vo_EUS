@@ -195,6 +195,55 @@ export function PatientPortal() {
     );
   }
 
+  // ── Últimos signos vitales (primera consulta = más reciente, están sorted desc) ──
+  const ultimaConsultaConSV = (
+    (pacienteActual as any)?.consultas?.find((c: any) => c.signos_vitales) ??
+    misConsultasReal.find((c: any) => c.signos_vitales)
+  );
+  const ultimosSV   = ultimaConsultaConSV?.signos_vitales ?? null;
+  const fechaUltSV  = ultimaConsultaConSV?.fecha ?? null;
+
+  // ── Helpers visuales ─────────────────────────────────────────
+  function InfoField({ label, value, mono = false }: { label: string; value?: string | number | null; mono?: boolean }) {
+    return (
+      <div>
+        <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+        <p className={`text-sm font-medium text-gray-800 ${mono ? "font-mono" : ""}`}>
+          {value ?? <span className="text-gray-300">—</span>}
+        </p>
+      </div>
+    );
+  }
+
+  function VitalBadge({ label, value, unit, color }: { label: string; value?: number | string | null; unit: string; color: string }) {
+    const colors: Record<string, string> = {
+      blue:   "bg-blue-50 border-blue-200 text-blue-700",
+      green:  "bg-green-50 border-green-200 text-green-700",
+      purple: "bg-purple-50 border-purple-200 text-purple-700",
+      orange: "bg-orange-50 border-orange-200 text-orange-700",
+      red:    "bg-red-50 border-red-200 text-red-700",
+      yellow: "bg-yellow-50 border-yellow-200 text-yellow-700",
+      teal:   "bg-teal-50 border-teal-200 text-teal-700",
+    };
+    return (
+      <div className={`border rounded-lg p-3 text-center ${colors[color] ?? colors.blue}`}>
+        <p className="text-xs opacity-70 mb-0.5">{label}</p>
+        <p className="text-lg font-bold leading-tight">
+          {value != null ? value : <span className="text-gray-300 text-sm">—</span>}
+        </p>
+        {unit && value != null && <p className="text-xs opacity-60">{unit}</p>}
+      </div>
+    );
+  }
+
+  // IMC color según clasificación OMS
+  const imcVal = ultimosSV?.imc != null ? Number(ultimosSV.imc) : null;
+  const imcColor = imcVal == null ? "blue"
+    : imcVal < 18.5 ? "yellow"
+    : imcVal < 25   ? "green"
+    : imcVal < 30   ? "yellow"
+    : "red";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -220,7 +269,7 @@ export function PatientPortal() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Información del Paciente */}
+        {/* ── Información Personal ───────────────────────────────── */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -228,58 +277,97 @@ export function PatientPortal() {
               Información Personal
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">CURP</p>
-                <p>{paciente.curp}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Edad</p>
-                <p>{paciente.edad} años</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Tipo de Sangre</p>
-                <p>{paciente.tipoSangre}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Teléfono</p>
-                <p>{paciente.telefono}</p>
+          <CardContent className="space-y-5">
+
+            {/* Bloque 1 — Datos personales */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos Personales</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <InfoField label="CURP" value={paciente.curp} mono />
+                <InfoField label="Sexo" value={paciente.sexo} />
+                <InfoField
+                  label="Fecha de Nacimiento"
+                  value={
+                    (paciente.fecha_nacimiento ?? (paciente as any).fechaNacimiento)
+                      ? new Date(
+                          (paciente.fecha_nacimiento ?? (paciente as any).fechaNacimiento) as string
+                        ).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })
+                      : null
+                  }
+                />
+                <InfoField label="Edad" value={paciente.edad != null ? `${paciente.edad} años` : null} />
               </div>
             </div>
 
-            {/* Riesgo Cardiovascular — solo si viene del mockData */}
-            {(paciente as any).riesgo_cardiovascular != null && (
+            <Separator />
+
+            {/* Bloque 2 — Contacto y residencia */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Contacto y Residencia</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <InfoField label="Teléfono" value={paciente.telefono} />
+                <InfoField label="Correo Electrónico" value={paciente.email} />
+                <InfoField label="Estado de Residencia" value={paciente.estado_residencia ?? (paciente as any).estadoResidencia} />
+                <InfoField label="Tipo de Sangre" value={paciente.tipo_sangre ?? (paciente as any).tipoSangre} />
+              </div>
+            </div>
+
+            {/* Bloque 3 — Últimos signos vitales */}
+            {ultimosSV && (
               <>
-                <Separator className="my-4" />
-                <div className="mb-2">
-                  <p className="text-sm text-gray-500 mb-1">Riesgo Cardiovascular <span className="text-xs text-gray-400">(modelo logístico sobre signos vitales)</span></p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full transition-all ${paciente.nivel_riesgo === 'Alto' ? 'bg-red-500' : paciente.nivel_riesgo === 'Moderado' ? 'bg-yellow-400' : 'bg-green-500'}`}
-                        style={{ width: `${((paciente as any).riesgo_cardiovascular * 100).toFixed(0)}%` }}
-                      />
-                    </div>
-                    <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${paciente.nivel_riesgo === 'Alto' ? 'bg-red-100 text-red-700' : paciente.nivel_riesgo === 'Moderado' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                      {paciente.nivel_riesgo} ({((paciente as any).riesgo_cardiovascular * 100).toFixed(0)}%)
-                    </span>
+                <Separator />
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    Últimos Signos Vitales
+                    {fechaUltSV && (
+                      <span className="ml-2 font-normal normal-case text-gray-300">
+                        — {new Date(fechaUltSV).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+                      </span>
+                    )}
+                  </p>
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                    <VitalBadge label="Peso"     value={ultimosSV.peso}     unit="kg"    color="blue"   />
+                    <VitalBadge label="Estatura" value={ultimosSV.altura}   unit="m"     color="blue"   />
+                    <VitalBadge label="IMC"      value={imcVal != null ? imcVal.toFixed(1) : null} unit="" color={imcColor} />
+                    <VitalBadge
+                      label="Presión"
+                      value={ultimosSV.presion_sistolica != null ? `${ultimosSV.presion_sistolica}/${ultimosSV.presion_diastolica}` : null}
+                      unit="mmHg"
+                      color="purple"
+                    />
+                    <VitalBadge label="Glucosa"  value={ultimosSV.glucosa != null ? Number(ultimosSV.glucosa).toFixed(0) : null} unit="mg/dL" color="orange" />
+                    <VitalBadge label="SpO₂"     value={ultimosSV.saturacion_oxigeno} unit="%"    color="teal"   />
                   </div>
                 </div>
               </>
             )}
 
+            {/* Bloque 4 — Condiciones médicas conocidas */}
+            {(paciente.tiene_diabetes || paciente.tiene_hipertension || paciente.tiene_asma ||
+              (paciente as any).tieneDiabetes || (paciente as any).tieneHipertension) && (
+              <>
+                <Separator />
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Condiciones Médicas</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(paciente.tiene_diabetes  || (paciente as any).tieneDiabetes)     && <Badge variant="destructive">Diabetes</Badge>}
+                    {(paciente.tiene_hipertension || (paciente as any).tieneHipertension) && <Badge variant="destructive">Hipertensión</Badge>}
+                    {(paciente.tiene_asma      || (paciente as any).tieneAsma)         && <Badge variant="secondary">Asma</Badge>}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Bloque 5 — Alergias y enfermedades crónicas */}
             {(hasItems(paciente.alergias) || hasItems((paciente as any).enfermedadesCronicas ?? (paciente as any).enfermedades_cronicas)) && (
               <>
-                <Separator className="my-4" />
+                <Separator />
                 <div className="grid md:grid-cols-2 gap-4">
                   {hasItems(paciente.alergias) && (
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Alergias</AlertTitle>
-                      <AlertDescription>
-                        {toStr(paciente.alergias)}
-                      </AlertDescription>
+                      <AlertDescription>{toStr(paciente.alergias)}</AlertDescription>
                     </Alert>
                   )}
                   {hasItems((paciente as any).enfermedadesCronicas ?? (paciente as any).enfermedades_cronicas) && (
@@ -294,6 +382,7 @@ export function PatientPortal() {
                 </div>
               </>
             )}
+
           </CardContent>
         </Card>
 
